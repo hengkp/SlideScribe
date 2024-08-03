@@ -1,15 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SlideScribe</title>
-  <style>
-    body { width: 200px; }
-    button { width: 100%; padding: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Canvas Slide Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            width: 300px;
+        }
+        #main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #slide-count {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #spinner {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <h1>Download Slides</h1>
-  <button id="download">Download as PDF</button>
-  <script src="popup.js"></script>
+    <div id="main">
+        <div id="slide-count">Slides detected: 0</div>
+        <button id="refresh">Refresh</button>
+        <button id="download">Download PDF</button>
+        <div id="spinner">Loading...</div>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>
