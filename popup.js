@@ -1,4 +1,4 @@
-(async function () {
+document.addEventListener("DOMContentLoaded", function () {
     const COMMANDS = {
         GET_CANVAS_INFO_LIST: "GET_CANVAS_INFO_LIST",
         GET_CANVAS_DATA: "GET_CANVAS_DATA",
@@ -40,6 +40,27 @@
         updateSlideCount();
     });
 
+    async function updateSlideCount() {
+        let tabs = await chrome.tabs.query({
+            active: true,
+            currentWindow: true,
+        });
+        console.log(
+            "Sending message to content script to get canvas info list",
+        );
+        chrome.tabs.sendMessage(
+            tabs[0].id,
+            { command: COMMANDS.GET_CANVAS_INFO_LIST },
+            (response) => {
+                if (response && response.canvasInfoList) {
+                    canvasInfoList = response.canvasInfoList;
+                    document.getElementById("slide-count").innerText =
+                        `Slides detected: ${canvasInfoList.length}`;
+                }
+            },
+        );
+    }
+
     chrome.runtime.onMessage.addListener(function (message) {
         console.log("Popup script received message:", message);
         if (message.canvasInfoList) {
@@ -49,28 +70,8 @@
         }
     });
 
-    async function updateSlideCount() {
-        let tabs = await chrome.tabs.query({
-            active: true,
-            currentWindow: true,
-        });
-        console.log(
-            "Sending message to content script to get canvas info list",
-        );
-        await chrome.tabs.sendMessage(
-            tabs[0].id,
-            { command: COMMANDS.GET_CANVAS_INFO_LIST },
-            (response) => {
-                if (response && response.canvasInfoList) {
-                    canvasInfoList = response.canvasInfoList;
-                    document.getElementById("slide-count").innerText =
-                        `Slides detected: ${canvasInfoList.length}`;
-                } else {
-                    console.error("Failed to get canvas info list");
-                }
-            },
-        );
-    }
+    // Initial load
+    updateSlideCount();
 
     async function getCanvasContent(data) {
         let tabs = await chrome.tabs.query({
@@ -91,7 +92,4 @@
             );
         });
     }
-
-    // Initial load
-    updateSlideCount();
-})();
+});

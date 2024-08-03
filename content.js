@@ -5,19 +5,24 @@
     };
 
     let frameId = generateId(20);
-    let canvasList = [];
+    window.canvasList = [];
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log("Content script received request:", request);
         switch (request.command) {
             case COMMANDS.GET_CANVAS_INFO_LIST:
                 waitForLoad()
-                    .then(async () => {
-                        await updateCanvasList();
-                        sendResponse({ canvasInfoList: canvasList });
+                    .then(() => {
+                        updateCanvasList()
+                            .then(() => {
+                                sendResponse({
+                                    canvasInfoList: window.canvasList,
+                                });
+                            })
+                            .catch((err) => console.error(err));
                     })
                     .catch((err) => console.error(err));
-                return true; // Indicate asynchronous response
+                return true;
             case COMMANDS.GET_CANVAS_DATA:
                 if (request.data.frame === frameId) {
                     sendResponse({
@@ -32,31 +37,15 @@
             default:
                 break;
         }
-        return true; // Indicate asynchronous response
+        return true;
     });
 
     async function updateCanvasList() {
-        canvasList = getAllCanvases(document);
-        console.log("Canvas info list:", canvasList);
-
-        let iframes = Array.from(document.getElementsByTagName("iframe"));
-        for (let iframe of iframes) {
-            try {
-                let iframeDoc =
-                    iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc) {
-                    await injectScript(iframe);
-                    await postMessageToIframe(iframe, {
-                        command: "GET_CANVAS_INFO_LIST",
-                    });
-                }
-            } catch (e) {
-                console.error("Error accessing iframe:", e);
-            }
-        }
+        window.canvasList = await getAllCanvases(document);
+        console.log("Canvas info list:", window.canvasList);
     }
 
-    function getAllCanvases(doc) {
+    async function getAllCanvases(doc) {
         let canvases = Array.from(doc.getElementsByTagName("canvas"))
             .filter((canvas) => !isTainted(canvas))
             .map((canvas, index) => {
@@ -77,41 +66,30 @@
                 canvasIDs.add(canvas.id);
             }
         }
+
+        let iframes = doc.getElementsByTagName("iframe");
+        for (let iframe of iframes) {
+            try {
+                let iframeDoc =
+                    iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc) {
+                    injectScript(iframe);
+                    iframe.contentWindow.postMessage(
+                        { command: "GET_CANVAS_INFO_LIST", frameId: frameId },
+                        "*",
+                    );
+                }
+            } catch (e) {
+                console.error("Error accessing iframe:", e.message);
+            }
+        }
         return uniqueCanvases;
     }
 
-    async function injectScript(iframe) {
-        return new Promise((resolve, reject) => {
-            let script = document.createElement("script");
-            script.src = chrome.runtime.getURL("inject.js");
-            script.onload = resolve;
-            script.onerror = reject;
-            iframe.contentDocument.head.appendChild(script);
-        });
-    }
-
-    async function postMessageToIframe(iframe, message) {
-        return new Promise((resolve, reject) => {
-            iframe.contentWindow.postMessage(message, "*");
-            window.addEventListener("message", function handler(event) {
-                if (
-                    event.source === iframe.contentWindow &&
-                    event.data &&
-                    event.data.canvasInfoList
-                ) {
-                    window.removeEventListener("message", handler);
-                    let newCanvases = event.data.canvasInfoList.filter(
-                        (canvas) =>
-                            !canvasList.some(
-                                (existingCanvas) =>
-                                    existingCanvas.id === canvas.id,
-                            ),
-                    );
-                    canvasList = canvasList.concat(newCanvases);
-                    resolve();
-                }
-            });
-        });
+    function injectScript(iframe) {
+        let script = document.createElement("script");
+        script.src = chrome.runtime.getURL("iframeContent.js");
+        iframe.contentDocument.head.appendChild(script);
     }
 
     function dec2hex(dec) {
@@ -145,15 +123,19 @@
     }
 
     window.addEventListener("message", (event) => {
-        if (event.data && event.data.canvasInfoList) {
+        if (
+            event.data &&
+            event.data.command === "GET_CANVAS_INFO_LIST" &&
+            event.data.canvasInfoList
+        ) {
             let newCanvases = event.data.canvasInfoList.filter(
                 (canvas) =>
-                    !canvasList.some(
+                    !window.canvasList.some(
                         (existingCanvas) => existingCanvas.id === canvas.id,
                     ),
             );
-            canvasList = canvasList.concat(newCanvases);
-            chrome.runtime.sendMessage({ canvasInfoList: canvasList });
+            window.canvasList = window.canvasList.concat(newCanvases);
+            chrome.runtime.sendMessage({ canvasInfoList: window.canvasList });
         }
     });
 
@@ -168,7 +150,7 @@
                         console.log("New canvas detected:", node);
                         updateCanvasList();
                         chrome.runtime.sendMessage({
-                            canvasInfoList: canvasList,
+                            canvasInfoList: window.canvasList,
                         });
                     }
                 });

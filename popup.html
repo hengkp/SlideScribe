@@ -1,43 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Canvas Slide Detector</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 10px;
-            width: 300px;
-        }
-        #main {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        #slide-count {
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        button {
-            margin: 5px;
-            padding: 10px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        #spinner {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div id="main">
-        <div id="slide-count">Slides detected: 0</div>
-        <button id="refresh">Refresh</button>
-        <button id="download">Download PDF</button>
-        <div id="spinner">Loading...</div>
-    </div>
-    <script src="popup.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Canvas Capture</title>
+        <script src="jspdf.umd.min.js"></script>
+        <script src="popup.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 10px;
+                width: 300px;
+            }
+            #main {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            #slide-count {
+                margin-bottom: 10px;
+                font-size: 16px;
+            }
+            button {
+                margin: 5px;
+                padding: 10px;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            #spinner {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="main">
+            <h1>Canvas Capture</h1>
+            <p id="slide-count">Slides detected: 0</p>
+            <button id="refresh">Refresh</button>
+            <button id="download">Download PDF</button>
+        </div>
+        <div id="spinner">
+            <p>Loading...</p>
+        </div>
+    </body>
 </html>
